@@ -22,6 +22,7 @@ Usage:
 ## Server side
 * constructor: new comet.server(timeout [integer]);
 * recive(callback [function])
+
 Usage:
 	var comet = require('./lib/comet');
 	
