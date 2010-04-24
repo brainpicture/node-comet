@@ -3,7 +3,7 @@
 ## Client side:
 * constructor: new cometClent(server [string], anonymous [boolean]);
 	- server: path to application like: http://example.com/:8080 or /server if you have routes
-	- anonymous: set true if you don't whant to remember user
+	- anonymous: set true if you don't want to remember users
 * recive(callback [function])
 * run(callback [function])
 * send(callback [function])
