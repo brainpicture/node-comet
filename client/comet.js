@@ -61,13 +61,18 @@ var cometClient = function (server, anonymous) {
 	cometClient.connections[session] = {
 		open: false,
 		callback: function (response) {
+			console.log('callback');
 			self.open = false;
 			if (response['f']) reciveCallback(response['d']);
 			if (response['d']['_system']) {
 				if (response['d']['act'] == 'changeUid') {
+					console.log('changeUid');
+					console.log(session);
+					console.log(cometClient.connections);
 					cometClient.connections[response['d']['uid']] = cometClient.connections[session];
 					delete cometClient.connections[session];
 					session = response['d']['uid'];
+					console.log(cometClient.connections);
 				}
 			}
 			if (!self.open) {
@@ -96,18 +101,23 @@ var cometClient = function (server, anonymous) {
 		cometClient.request(server, cometClient.toQuery(data));
 	}
 	
-	this.run = function (data) { // Run comet client
-		this.send({'_system': true, 'start': true, 'act': 'connect', 'data': data});
+	this.connect = function (data) { // Run comet client
+		this.send({'_system': true, 'act': 'connect', 'data': data});
 		return this;
 	}
 	
-	this.recive = function (callback) { // Recive data
+	this.disconnect = function (data) { // Run comet client
+		this.send({'_system': true, 'act': 'disconnect', 'data': data});
+		return this;
+	}
+	
+	this.onRecive = function (callback) { // Recive data
 		if (typeof(callback)=='function') {
 			reciveCallback=callback;
 		} else {
 			var err = new Error();
 			err.name = 'Wrong argument';
-			err.message = 'recive(callback), callback should be an function';
+			err.message = 'onRecive(callback), callback should be an function';
 			throw(err);
 		}
 	}
@@ -127,8 +137,8 @@ cometClient.toQuery = function (data) {
 // An request function
 cometClient.request = function (baseUrl, data) {
 	function foreignRequest (url, data) { // An cross domain request
-		if (data != '') url += '&';
-		url += '_comet=1';
+		if (data != '') data += '&';
+		data += '_comet=1';
 		var script = document.createElement('script');
 		script.type = 'text/javascript';
 		script.src = url+'?'+data;
@@ -160,7 +170,7 @@ cometClient.request = function (baseUrl, data) {
 					} catch(err) {
 						setTimeout(function() {
 							cometClient.request(baseUrl, data);
-						},10000);
+						} ,10000);
 					}
 				}
 			}

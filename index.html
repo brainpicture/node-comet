@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.1//EN">
+<html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+	<title>Comet module test</title>
+	<script type="text/javascript" src="client/comet.js" language="javascript"></script>
+	<style>
+	body, html, input {
+		margin: 0px;
+		padding: 0px;
+		font-family: DejaVu, Verdana, Geneva, sans-serif;
+		font-size: 20px;
+		color: #dbdbdb;
+		background: #3a3a3a;
+		
+	}
+	a { color: #8ae234; }
+	#auth { margin: 0px; font-size: 12px; background: #2e3436; border: 1px solid #6a6a6a; padding: 10px; }
+	#auth .login { margin-top: 20px; background: #2e3436; font-size: 19px; }
+	#auth .login .label { color: #88AA88; }
+	#auth h1 { font-size: 22px; color: #8ae234; text-align: center; margin: 0px; font-weight: normal; }
+	input {	background: #3a3a3a; border: 1px solid #6a6a6a; width: 100%; }
+	.input { width: 80%; float:left; height: 30px; padding-left: 0px; }
+	.send { width: 19%; float:right; background: #5a5a5a; height: 32px; }
+	#chat-content { overflow: hidden; background: #3a3a3a; padding: 5px; }
+	#chat-content b { color: #8ae234; }
+	#chat-input { width: 100%; position: fixed; bottom: 0; height: 37px; border-top: 1px solid #6a6a6a; background: #2e3436; padding-top: 4px;}
+	#chat-input table { width: 100%; }
+	.input-place { height: 38px; }
+	</style>
+	<script type="text/javascript" language="javascript">
+	// <![CDATA[
+		var client=new cometClient('http://localhost:8069');
+		
+		client.onRecive(function(data) {
+			function esc(text) {
+				if (text) return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+			}
+			if (data!=null) for (i in data) {
+				if (data[i].msg) document.getElementById('chat-content').innerHTML+='<b>'+esc(data[i].user)+':</b> '+esc(data[i].msg)+'<br />';
+				window.scrollTo(0,document.body.clientHeight);
+			}
+		});
+		
+		function sendToChat() {
+			client.send({msg: document.getElementById('chat-text').value});
+			document.getElementById('chat-text').value = '';
+			return false;
+		}
+		
+		function startChat() {
+			document.getElementById('auth').style.display = 'none';
+			document.getElementById('chat').style.display = '';
+			client.connect({userName: document.getElementById('userName').value});
+			return false;
+		}
+	// ]]>
+	</script>
+</head>
+<body>
+	<!-- Chat page section -->
+	<div id="chat" style="display: none;">
+		<div id="chat-content"></div>
+		<div class="input-place"></div>
+		<div id="chat-input">
+			<form onSubmit="return sendToChat();">
+				<input class="input" id="chat-text" />
+				<input class="send" type="submit" value="Send" />
+			</form>
+		</div>
+	</div>
+	
+	<!-- Auth page section -->
+	<div id="auth">
+		<h1>Node-comet module example</h1>
+		<div class="login">
+			<div class="label">Enter your name:</div>
+			<form onSubmit="return startChat();">
+				<input id="userName" class="input" id="chat-text" value="Anonymous" />
+				<input class="send" type="submit" value="Enter" />
+			</form>
+			<br /><br />
+		</div>
+		<table><tr><td width="50%" valign="top">
+		<b>English:</b><br />
+		This is a <b>chat room</b>, that demonstrates <a href="http://github.com/brainfucker/node-comet">node-comet</a> library for <a href="http://nodejs.ru">Node.js</a>.<br />
+		It uses <a href="http://en.wikipedia.org/wiki/Comet_(programming)">comet</a> technology for reciving messages. It means that messages will be delivered to you without any timeout. You can check it by opening several browser windows at one screen.<br />
+		Both the client-side and server-side are written in javascript.<br />
+		Download/Fork/Report a bug - on github: <a href="http://github.com/brainfucker/node-comet">http://github.com/brainfucker/node-comet</a>.
+		</td><td width="50%" valign="top">
+		<b>Русский:</b><br />
+		Это <b>чат</b>, демонстрирующий работу библиотеки <a href="http://github.com/brainfucker/node-comet">node-comet</a> для <a href="http://nodejs.ru">Node.js</a>.<br />
+		Он использует <a href="http://ru.wikipedia.org/wiki/Comet_(%D0%BF%D1%80%D0%BE%D0%B3%D1%80%D0%B0%D0%BC%D0%BC%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5)">comet</a> соединение для получения сообщений. Благодаря этому сообщения приходят моментально, без задержки. Вы можете проверить это, открыв чат в нескольких окнах браузера на одном экране.<br />
+		И клиентская и серверная часть написаны на javascript.<br />
+
+		Скачать/Форкнуть/Сообщить о баге - на гитхабе: <a href="http://github.com/brainfucker/node-comet">http://github.com/brainfucker/node-comet</a>.
+		</td></tr></table>
+	</div>
+</body>
+</html>

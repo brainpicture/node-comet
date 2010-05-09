@@ -6,6 +6,8 @@ var sys = require('sys'),
 exports.server = function (interval) {
 /// PRIVATE
 	var reciveCallback = null;
+	var connectCallback = null;
+	var disconnectCallback = null;
 	
 	var connections = {}
 		
@@ -33,7 +35,7 @@ exports.server = function (interval) {
 			sys.p('Sending: ');
 			sys.p(data);
 			if (this.open) {
-				sendData(this.handle, this.session, 'callback', {f:true,d:data});
+				sendData(this.handle, this.session, 'callback', {f:true, d:data});
 				this.open = false;
 			} else {
 				sys.p('FAULT');
@@ -44,8 +46,19 @@ exports.server = function (interval) {
 			if (this.open) {
 				clearTimeout(this.timeoutHandler);
 				sendData(this.handle, this.session, 'reconnect');
-				this.open = false
+				this.open = false;
 			}
+			var self=this;
+			this.timeoutHandler = setTimeout(function () { // disconnect
+				sys.p('DICONNECT');
+				sys.p(connections[self.session]);
+				if (connections[self.session]) {
+					if (disconnectCallback) disconnectCallback(self);
+					delete connections[self.session];
+					delete self;
+				}
+				sys.p(connections[self.session]);
+			}, 10000);
 		}
 		this.end = function () {
 			if (this.open) {
@@ -59,7 +72,6 @@ exports.server = function (interval) {
 			clearTimeout(this.timeoutHandler);
 
 			this.timeoutHandler = setTimeout(function () {
-				//sys.p(self);
 				self.reconnect();
 			}, interval);
 			return this;
@@ -82,11 +94,17 @@ exports.server = function (interval) {
 				
 				if (connections[query.s]==null) {
 					connections[query.s]=new connection(query.s, res);
-					if (data != null && data['data'] != null && reciveCallback != null) reciveCallback(connections[query.s], data['data']);
+					if (data && data.data) {
+						if (data.act == 'connect') {
+							if (connectCallback) connectCallback(connections[query.s], data['data']);
+						} else {
+							if (reciveCallback) reciveCallback(connections[query.s], data['data']);
+						}
+					}
 				} else {
-					if (data._system && data.start) { // User with same uid already exist
+					if (data._system && data.act == 'connect') { // User with same uid already exist
 						var oldSession = query.s;
-						while (connections[query.s] != null) {
+						while (connections[query.s]) {
 							query.s = '';
 							while (query.s.length < 40) query.s += Math.ceil(Math.random()*16).toString(16).toUpperCase();
 						}
@@ -95,10 +113,15 @@ exports.server = function (interval) {
 						
 						sendData(res, oldSession, 'callback', {d:{'_system': true, 'act': 'changeUid', 'uid': query.s}});
 						connections[query.s].open = false;
-						if (data != null && data['data'] != null && reciveCallback != null) reciveCallback(connections[query.s], data['data']);
+						if (data && data.data && connectCallback) connectCallback(connections[query.s], data['data']);
 						return true;
 					}
 					if (connections[query.s].open) connections[query.s].end();
+				}
+				if (data._system && data.act == 'disconnect') {
+					if (disconnectCallback) disconnectCallback(connections[query.s], data.data);
+					delete connections[query.s];
+					return true;
 				}
 				
 				connections[query.s].handle = res;
@@ -144,20 +167,46 @@ exports.server = function (interval) {
 	}
 	
 	this.run = function (port) {
+		var self = this;
 		var server = http.createServer(function (req, res) {
-			this.fetch(req,res);
+			if (!self.fetch(req,res)) {
+				res.writeHead(200, {'Content-Type': 'text/javascript'});
+				res.end('Not comet request');
+			};
 		});
 		server.listen(port);
 		return this;
 	}
 	
-	this.recive = function (callback) {
+	this.onRecive = function (callback) {
 		if (typeof(callback)=='function') {
 			reciveCallback=callback;
 		} else {
 			var err = new Error()
 			err.name = 'Wrong argument'
-			err.message = 'recive(callback), callback should be an function'
+			err.message = 'onRecive(callback), callback should be an function'
+			throw(err)
+		}
+	}
+	
+	this.onConnect = function (callback) {
+		if (typeof(callback)=='function') {
+			connectCallback=callback;
+		} else {
+			var err = new Error()
+			err.name = 'Wrong argument'
+			err.message = 'onConnect(callback), callback should be an function'
+			throw(err)
+		}
+	}
+	
+	this.onDisconnect = function (callback) {
+		if (typeof(callback)=='function') {
+			disconnectCallback=callback;
+		} else {
+			var err = new Error()
+			err.name = 'Wrong argument'
+			err.message = 'onDisconnect(callback), callback should be an function'
 			throw(err)
 		}
 	}
